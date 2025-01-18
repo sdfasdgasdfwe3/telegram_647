@@ -118,33 +118,6 @@ async def main():
         print(f"Ошибка при подключении к Telegram: {e}")
         sys.exit(1)
 
-    # Команда для выбора анимации
-    @client.on(events.NewMessage(pattern='/001'))
-    async def handler(event):
-        print("Команда '/001' получена.")
-        
-        # Список анимаций
-        animations = ['Анимация 1', 'Анимация 2', 'Анимация 3']
-        await event.respond(f"Выберите анимацию: {', '.join(animations)}")
-        
-        # Ждём ответ от пользователя
-        response = await client.wait_for(events.NewMessage(from_users=event.sender_id))
-        selected_animation = response.text
-        print(f"Пользователь выбрал: {selected_animation}")
-        
-        # Проверка на выбор анимации
-        if selected_animation == 'Анимация 1':
-            await event.respond(file='https://example.com/animation1.gif')
-            await event.respond("Вы выбрали анимацию 1.")
-        elif selected_animation == 'Анимация 2':
-            await event.respond(file='https://example.com/animation2.gif')
-            await event.respond("Вы выбрали анимацию 2.")
-        elif selected_animation == 'Анимация 3':
-            await event.respond(file='https://example.com/animation3.gif')
-            await event.respond("Вы выбрали анимацию 3.")
-        else:
-            await event.respond("Неверная анимация. Пожалуйста, выберите правильную анимацию.")
-
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
