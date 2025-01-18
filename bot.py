@@ -108,17 +108,53 @@ client = TelegramClient('sessions', API_ID, API_HASH)
 # Проверка и обновление файла bot.py с GitHub перед запуском
 check_and_update_file()
 
-# Главная асинхронная функция
-async def main():
-    print("Запуск main()")
-    try:
-        await client.start(phone=PHONE_NUMBER)
-        print("Подключение к Telegram успешно!")
-    except Exception as e:
-        print(f"Ошибка при подключении к Telegram: {e}")
-        sys.exit(1)
+# Добавим анимации текста
+async def menu_animation(message):
+    menu_text = """
+    Список анимаций:
+    1. Мерцание
+    2. Бегущий текст
+    3. Затмение
+    4. Падение букв
+    """
+    await message.reply(menu_text)
 
-    await client.run_until_disconnected()
+# Функции для анимаций
+def flicker(text, count=5):
+    for _ in range(count):
+        await client.send_message(message.chat.id, f"\u200b{text}")
+        await asyncio.sleep(0.2)
+        await client.send_message(message.chat.id, f"{text}")
+        await asyncio.sleep(0.2)
+
+def running_text(text):
+    for i in range(len(text) + 1):
+        await client.send_message(message.chat.id, text[:i])
+        await asyncio.sleep(0.2)
+
+def fade_text(message, text):
+    for i in range(len(text)):
+        await message.reply(text[:i])
+        await asyncio.sleep(0.2)
+    
+def falling_letters(message, text):
+    for letter in text:
+        await message.reply(letter)
+        await asyncio.sleep(0.3)
+
+# Обработка команды "меню"
+@client.on(events.NewMessage(pattern='/меню'))
+async def handle_menu(event):
+    await menu_animation(event)
+    user_choice = await client.wait_for(events.NewMessage())
+    if user_choice.text == '1':
+        await flicker("Мерцание текста")
+    elif user_choice.text == '2':
+        await running_text("Бегущий текст")
+    elif user_choice.text == '3':
+        await fade_text(event, "Затмение текста")
+    elif user_choice.text == '4':
+        await falling_letters(event, "Падение букв")
 
 if __name__ == "__main__":
     asyncio.run(main())
