@@ -31,6 +31,7 @@ for package in required_packages:
 
 # Путь к локальному файлу конфигурации на устройстве пользователя
 CONFIG_FILE = '/data/data/com.termux/files/home/config.json'
+BOT_FILE_PATH = '/data/data/com.termux/files/home/bot.py'
 
 # Функция для проверки, прошло ли больше года с последнего обновления
 def is_year_passed(last_update):
@@ -41,36 +42,17 @@ def is_year_passed(last_update):
 def check_and_update_file():
     # Ссылка на файл на GitHub
     github_url = "https://raw.githubusercontent.com/sdfasdgasdfwe3/telegram_647/main/bot.py"
-    local_file_path = '/data/data/com.termux/files/home/bot.py'
 
-    try:
-        # Получаем содержимое файла с GitHub
-        response = requests.get(github_url)
-        if response.status_code != 200:
-            print(f"Ошибка при скачивании файла с GitHub: {response.status_code}")
-            return
+    # Получаем хеш текущей версии файла на GitHub
+    response = requests.get(github_url)
+    if response.status_code != 200:
+        print(f"Ошибка при скачивании файла с GitHub: {response.status_code}")
+        return
 
-        # Получаем хеш содержимого GitHub файла
-        github_hash = hashlib.md5(response.content).hexdigest()
-
-        # Проверка, существует ли локальный файл и сравнение его хеша
-        if os.path.exists(local_file_path):
-            with open(local_file_path, 'rb') as f:
-                local_hash = hashlib.md5(f.read()).hexdigest()
-
-            if local_hash == github_hash:
-                print("Локальная версия актуальна.")
-                return
-
-        # Если файл устарел или его нет, скачиваем новую версию
-        with open(local_file_path, 'wb') as f:
-            f.write(response.content)
-        print("Файл обновлён до последней версии.")
-
-    except requests.RequestException as e:
-        print(f"Ошибка при запросе к GitHub: {e}")
-    except Exception as e:
-        print(f"Ошибка при проверке или обновлении файла: {e}")
+    # Скачиваем файл на локальную машину
+    with open(BOT_FILE_PATH, 'wb') as f:
+        f.write(response.content)
+    print("Файл bot.py обновлён до последней версии.")
 
 # Проверка наличия и обновление конфигурационного файла
 if os.path.exists(CONFIG_FILE):
@@ -86,19 +68,9 @@ if os.path.exists(CONFIG_FILE):
         # Проверка, прошло ли больше года с последнего запроса данных
         if is_year_passed(last_update):
             print("Прошел год с последнего обновления конфигурации. Пожалуйста, введите данные снова.")
-            while True:
-                try:
-                    API_ID = int(input("Введите ваш API ID (число): "))
-                    break
-                except ValueError:
-                    print("API ID должно быть числом. Попробуйте снова.")
+            API_ID = int(input("Введите ваш API ID (число): "))
             API_HASH = input("Введите ваш API Hash: ").strip()
-            while True:
-                PHONE_NUMBER = input("Введите ваш номер телефона: ").strip()
-                if PHONE_NUMBER.startswith('+') and len(PHONE_NUMBER) > 10:
-                    break
-                else:
-                    print("Неверный формат номера телефона. Попробуйте снова.")
+            PHONE_NUMBER = input("Введите ваш номер телефона: ").strip()
 
             # Обновляем файл конфигурации
             with open(CONFIG_FILE, 'w') as f:
@@ -152,3 +124,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
