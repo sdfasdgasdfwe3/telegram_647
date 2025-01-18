@@ -43,28 +43,32 @@ def check_and_update_file():
     github_url = "https://raw.githubusercontent.com/sdfasdgasdfwe3/telegram_647/main/bot.py"
     local_file_path = '/data/data/com.termux/files/home/bot.py'
 
-    # Получаем хеш текущей версии файла на GitHub
-    response = requests.get(github_url)
-    if response.status_code != 200:
-        print(f"Ошибка при скачивании файла с GitHub: {response.status_code}")
-        return
-
-    # Получаем хеш содержимого GitHub файла
-    github_hash = hashlib.md5(response.content).hexdigest()
-
-    # Проверка, существует ли локальный файл и сравнение его хеша
-    if os.path.exists(local_file_path):
-        with open(local_file_path, 'rb') as f:
-            local_hash = hashlib.md5(f.read()).hexdigest()
-
-        if local_hash == github_hash:
-            print("Локальная версия актуальна.")
+    try:
+        # Получаем содержимое файла с GitHub
+        response = requests.get(github_url)
+        if response.status_code != 200:
+            print(f"Ошибка при скачивании файла с GitHub: {response.status_code}")
             return
 
-    # Если файл устарел или его нет, скачиваем новую версию
-    with open(local_file_path, 'wb') as f:
-        f.write(response.content)
-    print("Файл обновлён до последней версии.")
+        # Получаем хеш содержимого GitHub файла
+        github_hash = hashlib.md5(response.content).hexdigest()
+
+        # Проверка, существует ли локальный файл и сравнение его хеша
+        if os.path.exists(local_file_path):
+            with open(local_file_path, 'rb') as f:
+                local_hash = hashlib.md5(f.read()).hexdigest()
+
+            if local_hash == github_hash:
+                print("Локальная версия актуальна.")
+                return
+
+        # Если файл устарел или его нет, скачиваем новую версию
+        with open(local_file_path, 'wb') as f:
+            f.write(response.content)
+        print("Файл обновлён до последней версии.")
+
+    except Exception as e:
+        print(f"Ошибка при проверке или обновлении файла: {e}")
 
 # Проверка наличия и обновление конфигурационного файла
 if os.path.exists(CONFIG_FILE):
