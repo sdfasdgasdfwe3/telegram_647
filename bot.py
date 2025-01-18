@@ -147,6 +147,8 @@ async def handler(event):
     if event.raw_text == "001":
         animations_list = "\n".join([f"{key}) {value}" for key, value in animations.items()])
         message = await event.respond(f"Доступные анимации:\n{animations_list}\nВыберите номер анимации:")
+        # Удаляем команду 001 сразу
+        await event.delete()
         # Запоминаем сообщение, чтобы удалить его после выбора анимации
         awaiting_animation_choice = True
         start_time = time.time()
@@ -164,7 +166,7 @@ async def handler(event):
                 await event.delete()  # Удаляем сообщение с разделом анимаций
                 # Отправляем сообщение о выбранной анимации
                 await event.respond(f"Вы выбрали анимацию: {animations[choice]}\n"
-                                    "Чтобы анимировать текст, отправьте команду /p <ваш текст>")
+                                    "Чтобы анимировать текст, отправьте команду /р <ваш текст>")
             else:
                 await event.respond("Неверный номер анимации. Попробуйте снова.")
         else:
@@ -177,29 +179,4 @@ async def handler(event):
             current_animation = choice
             await event.respond(f"Анимация изменена на: {animations[choice]}")
         else:
-            await event.respond("Неверный номер анимации. Пожалуйста, выберите существующую анимацию.")
-
-    elif event.raw_text.startswith('/p '):
-        text_to_animate = event.raw_text[3:].strip()  # Убираем лишние пробелы
-        if not text_to_animate:
-            await event.edit("Ошибка: Текст для анимации не может быть пустым.")
-            return
-        if len(text_to_animate) > 200:
-            await event.edit("Ошибка: текст слишком длинный. Используйте текст до 200 символов.")
-            return
-
-        try:
-            await animation_functions[current_animation](event, text_to_animate)
-        except Exception as e:
-            print(f"Ошибка при выполнении анимации: {e}")
-            await event.edit(f"Произошла ошибка при выполнении анимации: {e}")
-
-# Главная асинхронная функция
-async def main():
-    print("Запуск main()")
-    await client.start(phone=PHONE_NUMBER)
-    print("Скрипт успешно запущен! Отправьте команду '001' для выбора анимации.")
-    await client.run_until_disconnected()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+            await event.respond("Неверный номер анимации. Пожалуйста, выберите существующ
