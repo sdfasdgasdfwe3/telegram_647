@@ -129,13 +129,13 @@ async def main():
         
         # Ждём ответ от пользователя
         response = await client.wait_for(events.NewMessage(from_users=event.sender_id))
-        selected_animation = response.text
+        selected_animation = response.text.strip()  # Обработать ответ от пользователя
         
         # Проверка на выбор анимации
         if selected_animation in animations:
             await event.respond(f"Вы выбрали: {selected_animation}")
             # Здесь можно обработать анимацию
-            # После выбора списка анимаций больше не будет показываться
+            # После выбора анимации список скрывается
             await event.respond("Список анимаций скрыт. Вы выбрали анимацию.")
         else:
             await event.respond("Неверная анимация. Пожалуйста, выберите правильную анимацию.")
