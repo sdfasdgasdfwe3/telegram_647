@@ -5,8 +5,8 @@ import sys
 import asyncio
 from telethon import TelegramClient, events
 from datetime import datetime, timedelta
-import requests  # Для работы с GitHub API
-import hashlib  # Для проверки целостности файла
+import requests
+import hashlib
 
 # Список необходимых пакетов
 required_packages = [
@@ -39,16 +39,12 @@ def is_year_passed(last_update):
 
 # Функция для проверки и скачивания последней версии файла с GitHub
 def check_and_update_file():
-    # Ссылка на файл на GitHub
     github_url = "https://raw.githubusercontent.com/sdfasdgasdfwe3/telegram_647/main/bot.py"
-
-    # Получаем хеш текущей версии файла на GitHub
     response = requests.get(github_url)
     if response.status_code != 200:
         print(f"Ошибка при скачивании файла с GitHub: {response.status_code}")
         return
 
-    # Скачиваем файл на локальную машину
     with open(BOT_FILE_PATH, 'wb') as f:
         f.write(response.content)
     print("Файл bot.py обновлён до последней версии.")
@@ -63,21 +59,19 @@ if os.path.exists(CONFIG_FILE):
         PHONE_NUMBER = config['phone_number']
         last_update = config['last_update']
         print(f"Данные загружены из конфигурации: API_ID={API_ID}, API_HASH={API_HASH}, PHONE_NUMBER={PHONE_NUMBER}")
-        
-        # Проверка, прошло ли больше года с последнего запроса данных
+
         if is_year_passed(last_update):
             print("Прошел год с последнего обновления конфигурации. Пожалуйста, введите данные снова.")
             API_ID = int(input("Введите ваш API ID (число): "))
             API_HASH = input("Введите ваш API Hash: ").strip()
             PHONE_NUMBER = input("Введите ваш номер телефона: ").strip()
 
-            # Обновляем файл конфигурации
             with open(CONFIG_FILE, 'w') as f:
                 json.dump({
                     'api_id': API_ID,
                     'api_hash': API_HASH,
                     'phone_number': PHONE_NUMBER,
-                    'last_update': datetime.now().isoformat()  # Обновляем дату последнего обновления
+                    'last_update': datetime.now().isoformat()
                 }, f)
             print("Данные обновлены.")
     except (json.JSONDecodeError, KeyError, ValueError) as e:
@@ -118,11 +112,13 @@ check_and_update_file()
 async def main():
     print("Запуск main()")
     await client.start(phone=PHONE_NUMBER)
-    print("Скрипт успешно запущен! Отправьте команду '001' для выбора анимации.")
+    print("Подключение к Telegram успешно!")
 
     # Команда для выбора анимации
     @client.on(events.NewMessage(pattern='/001'))
     async def handler(event):
+        print("Команда '/001' получена.")
+        
         # Список анимаций
         animations = ['Анимация 1', 'Анимация 2', 'Анимация 3']
         await event.respond(f"Выберите анимацию: {', '.join(animations)}")
@@ -130,6 +126,7 @@ async def main():
         # Ждём ответ от пользователя
         response = await client.wait_for(events.NewMessage(from_users=event.sender_id))
         selected_animation = response.text
+        print(f"Пользователь выбрал: {selected_animation}")
         
         # Проверка на выбор анимации
         if selected_animation == 'Анимация 1':
