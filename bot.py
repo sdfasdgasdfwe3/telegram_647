@@ -67,6 +67,8 @@ def check_and_update_file():
             f.write(response.content)
         print("Файл обновлён до последней версии.")
 
+    except requests.RequestException as e:
+        print(f"Ошибка при запросе к GitHub: {e}")
     except Exception as e:
         print(f"Ошибка при проверке или обновлении файла: {e}")
 
@@ -84,9 +86,19 @@ if os.path.exists(CONFIG_FILE):
         # Проверка, прошло ли больше года с последнего запроса данных
         if is_year_passed(last_update):
             print("Прошел год с последнего обновления конфигурации. Пожалуйста, введите данные снова.")
-            API_ID = int(input("Введите ваш API ID (число): "))
+            while True:
+                try:
+                    API_ID = int(input("Введите ваш API ID (число): "))
+                    break
+                except ValueError:
+                    print("API ID должно быть числом. Попробуйте снова.")
             API_HASH = input("Введите ваш API Hash: ").strip()
-            PHONE_NUMBER = input("Введите ваш номер телефона: ").strip()
+            while True:
+                PHONE_NUMBER = input("Введите ваш номер телефона: ").strip()
+                if PHONE_NUMBER.startswith('+') and len(PHONE_NUMBER) > 10:
+                    break
+                else:
+                    print("Неверный формат номера телефона. Попробуйте снова.")
 
             # Обновляем файл конфигурации
             with open(CONFIG_FILE, 'w') as f:
