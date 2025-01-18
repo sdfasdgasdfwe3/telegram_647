@@ -4,7 +4,6 @@ import subprocess
 import sys
 import asyncio
 from telethon import TelegramClient, events
-import time
 from datetime import datetime, timedelta
 import requests  # Для работы с GitHub API
 import hashlib  # Для проверки целостности файла
@@ -121,6 +120,7 @@ async def main():
     await client.start(phone=PHONE_NUMBER)
     print("Скрипт успешно запущен! Отправьте команду '001' для выбора анимации.")
 
+    # Команда для выбора анимации
     @client.on(events.NewMessage(pattern='/001'))
     async def handler(event):
         # Список анимаций
@@ -134,8 +134,8 @@ async def main():
         # Проверка на выбор анимации
         if selected_animation in animations:
             await event.respond(f"Вы выбрали: {selected_animation}")
-            # Здесь мы можем скрыть или очистить список анимаций
-            # В Telegram можно просто не отвечать больше или отправить финальное сообщение.
+            # Здесь можно обработать анимацию
+            # После выбора списка анимаций больше не будет показываться
             await event.respond("Список анимаций скрыт. Вы выбрали анимацию.")
         else:
             await event.respond("Неверная анимация. Пожалуйста, выберите правильную анимацию.")
