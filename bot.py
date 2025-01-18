@@ -111,8 +111,12 @@ check_and_update_file()
 # Главная асинхронная функция
 async def main():
     print("Запуск main()")
-    await client.start(phone=PHONE_NUMBER)
-    print("Подключение к Telegram успешно!")
+    try:
+        await client.start(phone=PHONE_NUMBER)
+        print("Подключение к Telegram успешно!")
+    except Exception as e:
+        print(f"Ошибка при подключении к Telegram: {e}")
+        sys.exit(1)
 
     # Команда для выбора анимации
     @client.on(events.NewMessage(pattern='/001'))
