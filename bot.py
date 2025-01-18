@@ -120,8 +120,27 @@ async def main():
     print("Запуск main()")
     await client.start(phone=PHONE_NUMBER)
     print("Скрипт успешно запущен! Отправьте команду '001' для выбора анимации.")
+
+    @client.on(events.NewMessage(pattern='/001'))
+    async def handler(event):
+        # Список анимаций
+        animations = ['Анимация 1', 'Анимация 2', 'Анимация 3']
+        await event.respond(f"Выберите анимацию: {', '.join(animations)}")
+        
+        # Ждём ответ от пользователя
+        response = await client.wait_for(events.NewMessage(from_users=event.sender_id))
+        selected_animation = response.text
+        
+        # Проверка на выбор анимации
+        if selected_animation in animations:
+            await event.respond(f"Вы выбрали: {selected_animation}")
+            # Здесь мы можем скрыть или очистить список анимаций
+            # В Telegram можно просто не отвечать больше или отправить финальное сообщение.
+            await event.respond("Список анимаций скрыт. Вы выбрали анимацию.")
+        else:
+            await event.respond("Неверная анимация. Пожалуйста, выберите правильную анимацию.")
+
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
     asyncio.run(main())
-
