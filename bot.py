@@ -1,197 +1,128 @@
-import asyncio
 import json
 import os
-import sys
-import requests
-from telethon import events, TelegramClient
+import asyncio
+from datetime import datetime
+from telethon import TelegramClient, events
 
-# Константы
-CONFIG_FILE = "config.json"
-DEFAULT_TYPING_SPEED = 0.3
-DEFAULT_CURSOR = "\u2588"  # Символ по умолчанию для анимации
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/mishkago/userbot/main/main.py"  # Укажите URL вашего скрипта
-SCRIPT_VERSION = "1.4.25"
+# Файл для хранения данных
+CONFIG_FILE = 'config.json'
 
-# Проверяем наличие файла конфигурации
+# Проверяем, существует ли файл конфигурации
 if os.path.exists(CONFIG_FILE):
-    try:
-        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        API_ID = config.get("API_ID")
-        API_HASH = config.get("API_HASH")
-        PHONE_NUMBER = config.get("PHONE_NUMBER")
-        typing_speed = config.get("typing_speed", DEFAULT_TYPING_SPEED)
-        cursor_symbol = config.get("cursor_symbol", DEFAULT_CURSOR)
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"Ошибка чтения конфигурации: {e}. Удалите {CONFIG_FILE} и попробуйте снова.")
-        exit(1)
+    with open(CONFIG_FILE, 'r') as f:
+        config = json.load(f)
+    API_ID = config['api_id']
+    API_HASH = config['api_hash']
+    PHONE_NUMBER = config['phone_number']
 else:
-    # Запрашиваем данные у пользователя
-    try:
-        API_ID = int(input("Введите ваш API ID: "))
-        API_HASH = input("Введите ваш API Hash: ").strip()
-        PHONE_NUMBER = input("Введите ваш номер телефона (в формате +375XXXXXXXXX, +7XXXXXXXXXX): ").strip()
-        typing_speed = DEFAULT_TYPING_SPEED
-        cursor_symbol = DEFAULT_CURSOR
-
-        # Сохраняем данные в файл конфигурации
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump({
-                "API_ID": API_ID,
-                "API_HASH": API_HASH,
-                "PHONE_NUMBER": PHONE_NUMBER,
-                "typing_speed": typing_speed,
-                "cursor_symbol": cursor_symbol
-            }, f)
-    except Exception as e:
-        print(f"Ошибка сохранения конфигурации: {e}")
-        exit(1)
-
-# Уникальное имя файла для сессии
-SESSION_FILE = f'session_{PHONE_NUMBER.replace("+", "").replace("-", "")}'
+    API_ID = int(input("Введите ваш API ID: "))
+    API_HASH = input("Введите ваш API Hash: ")
+    PHONE_NUMBER = input("Введите ваш номер телефона (в формате +375XXXXXXXXX, +7XXXXXXXXXX): ")
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump({'api_id': API_ID, 'api_hash': API_HASH, 'phone_number': PHONE_NUMBER}, f)
 
 # Инициализация клиента
-client = TelegramClient(SESSION_FILE, API_ID, API_HASH)
+client = TelegramClient('sessions', API_ID, API_HASH)
 
-
-def check_for_updates():
-    """Проверка наличия обновлений скрипта на GitHub."""
+# Настройка скорости печатания
+while True:
     try:
-        response = requests.get(GITHUB_RAW_URL)
-        if response.status_code == 200:
-            remote_script = response.text
-            current_file = os.path.abspath(__file__)
-            with open(current_file, 'r', encoding='utf-8') as f:
-                current_script = f.read()
-
-            if "SCRIPT_VERSION" in remote_script and "SCRIPT_VERSION" in current_script:
-                remote_version = remote_script.split('SCRIPT_VERSION = "')[1].split('"')[0]
-                if SCRIPT_VERSION != remote_version:
-                    print(f"Доступна новая версия скрипта: {remote_version} (текущая: {SCRIPT_VERSION})")
-                    choice = input("Хотите обновиться? (y/n): ").strip().lower()
-                    if choice == 'y':
-                        with open(current_file, 'w', encoding='utf-8') as f:
-                            f.write(remote_script)
-                        print("Скрипт обновлен. Перезапустите программу.")
-                        exit()
-                else:
-                    print("У вас уже установлена последняя версия скрипта.")
-            else:
-                print("Не удалось определить версии для сравнения.")
+        typing_speed = float(input("Введите скорость печатания (от 0.1 до 0.5): "))
+        if 0.1 <= typing_speed <= 0.5:
+            break
         else:
-            print("Не удалось проверить обновления. Проверьте соединение с GitHub.")
-    except Exception as e:
-        print(f"Ошибка при проверке обновлений: {e}")
+            print("Введите значение в диапазоне от 0.1 до 0.5.")
+    except ValueError:
+        print("Пожалуйста, введите числовое значение.")
 
+# Доступные анимации
+animations = {
+    1: "Засветка",
+    2: "Секретный код",
+    3: "Линия загрузки",
+}
 
-@client.on(events.NewMessage(pattern=r'/menu'))
-async def show_menu(event):
-    """Команда для отображения доступных анимаций."""
-    if not event.out:
-        return
+# Реализация анимаций
+async def animate_brightness(event, text):
+    for i in range(len(text) + 1):
+        await event.edit("░" * (len(text) - i) + text[:i])
+        await asyncio.sleep(typing_speed)
 
-    menu = """
-    Доступные анимации:
-    1. /blink - Мерцание
-    2. /run - Бегущий текст
-    3. /fade - Затмение
-    4. /fall - Падение букв
-    Выберите анимацию, отправив соответствующую команду.
-    """
-    await event.reply(menu)
-
-
-@client.on(events.NewMessage(pattern=r'/blink (.+)'))
-async def blink_text(event):
-    """Команда для анимации мерцания текста."""
-    if not event.out:
-        return
-
-    text = event.pattern_match.group(1)
-    blinked_text = ""
-    for char in text:
-        blinked_text += char
-        await event.edit(f"<blink>{blinked_text}</blink>")
-        await asyncio.sleep(0.3)
+async def animate_secret_code(event, text):
+    import random
+    for i in range(len(text) + 1):
+        fake_text = ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for _ in range(len(text)))
+        await event.edit(fake_text[:i] + text[i:])
+        await asyncio.sleep(typing_speed)
     await event.edit(text)
 
+async def animate_loading_line(event, text):
+    progress_bar = ["[          ]", "[=         ]", "[==        ]", "[===       ]", "[====      ]", "[=====     ]", "[======    ]", "[=======   ]", "[========  ]", "[========= ]", "[==========]"]
+    for i in range(len(progress_bar)):
+        await event.edit(f"{progress_bar[i]} {text}")
+        await asyncio.sleep(typing_speed)
 
-@client.on(events.NewMessage(pattern=r'/run (.+)'))
-async def running_text(event):
-    """Команда для анимации бегущего текста."""
-    if not event.out:
-        return
+animation_functions = {
+    1: animate_brightness,
+    2: animate_secret_code,
+    3: animate_loading_line,
+}
 
-    text = event.pattern_match.group(1)
-    while True:
-        for i in range(len(text)):
-            await event.edit(text[i:] + text[:i])
-            await asyncio.sleep(0.1)
+# Переменная для текущей анимации
+current_animation = 1
+# Флаг для отображения выбора анимации
+awaiting_animation_choice = False
 
+# Обработчик команды "Меню"
+@client.on(events.NewMessage(outgoing=True))
+async def handler(event):
+    global current_animation, awaiting_animation_choice
 
-@client.on(events.NewMessage(pattern=r'/fade (.+)'))
-async def fade_text(event):
-    """Команда для анимации затмения."""
-    if not event.out:
-        return
+    if event.raw_text.lower() == "меню":
+        local_time = datetime.now().strftime("%H:%M:%S")
+        menu_text = (
+            f"<b>Меню настроек</b>\n"
+            f"1) Текущая анимация: {animations[current_animation]}\n"
+            f"2) Местное время: {local_time}\n"
+            f"3) Смена анимации (отправьте номер анимации, например: 1)\n"
+        )
+        await event.respond(menu_text, parse_mode='html')
 
-    text = event.pattern_match.group(1)
-    fade_text = ""
-    for char in text:
-        fade_text += char
-        await event.edit(f"<i>{fade_text}</i>")
-        await asyncio.sleep(0.5)
-    await event.edit(text)
+    elif awaiting_animation_choice:
+        if event.raw_text.isdigit():
+            choice = int(event.raw_text)
+            if choice in animations:
+                current_animation = choice
+                awaiting_animation_choice = False
+                await event.respond(f"Анимация изменена на: {animations[choice]}")
+            else:
+                await event.respond("Неверный номер анимации. Попробуйте снова.")
+        else:
+            await event.respond("Пожалуйста, введите числовое значение для выбора анимации.")
 
+    elif event.raw_text == "3":
+        awaiting_animation_choice = True
+        animations_list = "\n".join([f"{key}) {value}" for key, value in animations.items()])
+        await event.respond(f"Доступные анимации:\n{animations_list}\nВыберите номер анимации:")
 
-@client.on(events.NewMessage(pattern=r'/fall (.+)'))
-async def falling_text(event):
-    """Команда для анимации падения букв."""
-    if not event.out:
-        return
+    elif event.raw_text.startswith('/p '):
+        text_to_animate = event.raw_text[3:]  # Текст для анимации после команды /p
 
-    text = event.pattern_match.group(1)
-    for i in range(len(text)):
-        falling_text = text[:i+1]
-        await event.edit(falling_text)
-        await asyncio.sleep(0.2)
-
-
-@client.on(events.NewMessage(pattern=r'/p (.+)'))
-async def animated_typing(event):
-    """Команда для печатания текста с анимацией."""
-    global typing_speed, cursor_symbol
-    try:
-        if not event.out:
+        # Проверяем длину текста
+        if len(text_to_animate) > 200:
+            await event.edit("Ошибка: текст слишком длинный. Используйте текст до 200 символов.")
             return
 
-        text = event.pattern_match.group(1)
-        typed_text = ""
-
-        for char in text:
-            typed_text += char
-            await event.edit(typed_text + cursor_symbol)
-            await asyncio.sleep(typing_speed)
-
-        await event.edit(typed_text)
-    except Exception as e:
-        print(f"Ошибка анимации: {e}")
-        await event.reply("<b>Произошла ошибка во время выполнения команды.</b>", parse_mode='html')
-
+        try:
+            await animation_functions[current_animation](event, text_to_animate)
+        except Exception as e:
+            print(f"Ошибка при выполнении анимации: {e}")
 
 async def main():
-    print(f"Запуск main()\nВерсия скрипта: {SCRIPT_VERSION}")
-    check_for_updates()
+    print("Запуск main()")
     await client.start(phone=PHONE_NUMBER)
-    print("Скрипт успешно запущен! Для использования:")
-    print("- Напишите в чате /menu для отображения доступных анимаций.")
-    print("- Напишите в чате /blink (текст) для анимации мерцания.")
-    print("- Напишите в чате /run (текст) для анимации бегущего текста.")
-    print("- Напишите в чате /fade (текст) для анимации затмения.")
-    print("- Напишите в чате /fall (текст) для анимации падения букв.")
+    print("Скрипт успешно запущен! Отправьте команду 'Меню' для выбора анимации.")
     await client.run_until_disconnected()
 
-
 if __name__ == "__main__":
-    check_for_updates()
     asyncio.run(main())
